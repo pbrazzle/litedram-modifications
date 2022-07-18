@@ -22,6 +22,9 @@ from litex.soc.interconnect.csr import AutoCSR
 from litedram.common import *
 from litedram.core.bandwidth import Bandwidth
 
+from litedram.core.TMROutput import *
+from litedram.core.TMRInput import *
+
 # _CommandChooser ----------------------------------------------------------------------------------
 
 class _CommandChooser(Module):
@@ -317,7 +320,22 @@ class Multiplexer(Module, AutoCSR):
         write_time_en, max_write_time = anti_starvation(settings.write_time)
 
         # Refresh ----------------------------------------------------------------------------------
-        self.comb += [bm.refresh_req.eq(refresher.cmd.valid) for bm in bank_machines]
+
+        ## TMR Outputs
+
+        self.refreshReadyTMROut = refreshReadyTMROut = TMROutput(refresher.cmd.ready)
+        self.comb += refresher.cmd.readyTMR.eq(refreshReadyTMROut.output)
+        self.submodules += refreshReadyTMROut
+
+        ## TMR Inputs
+
+        self.refreshValidTMRIn = refreshValidTMRIn = TMRInput(refresher.cmd.validTMR)
+        self.submodules += refreshValidTMRIn
+
+        self.refreshLastTMRIn = refreshLastTMRIn = TMRInput(refresher.cmd.lastTMR)
+        self.submodules += refreshLastTMRIn
+
+        self.comb += [bm.refresh_req.eq(refreshValidTMRIn.result) for bm in bank_machines]
         go_to_refresh = Signal()
         bm_refresh_gnts = [bm.refresh_gnt for bm in bank_machines]
         self.comb += go_to_refresh.eq(reduce(and_, bm_refresh_gnts))
@@ -391,7 +409,7 @@ class Multiplexer(Module, AutoCSR):
         fsm.act("REFRESH",
             steerer.sel[0].eq(STEER_REFRESH),
             refresher.cmd.ready.eq(1),
-            If(refresher.cmd.last,
+            If(refreshLastTMRIn.result,
                 NextState("READ")
             )
         )

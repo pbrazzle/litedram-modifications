@@ -14,6 +14,9 @@ from litex.soc.interconnect import stream
 
 from litedram.core.multiplexer import *
 
+from litedram.core.TMROutput import *
+from litedram.core.TMRInput import *
+
 # RefreshExecuter ----------------------------------------------------------------------------------
 
 class RefreshExecuter(Module):
@@ -226,6 +229,79 @@ class Refresher(Module):
 
         # # #
 
+        # TMR Setup
+
+        ## a
+
+        self.aTMROut = aTMROut = TMROutput(cmd.a)
+        self.comb += cmd.aTMR.eq(aTMROut.output)
+        self.submodules += aTMROut
+            
+        ## ba
+
+        self.baTMROut = baTMROut = TMROutput(cmd.ba)
+        self.comb += cmd.baTMR.eq(baTMROut.output)
+        self.submodules += baTMROut
+        
+        ## cas
+
+        self.casTMROut = casTMROut = TMROutput(cmd.cas)
+        self.comb += cmd.casTMR.eq(casTMROut.output)
+        self.submodules += casTMROut
+        
+        ## ras
+
+        self.rasTMROut = rasTMROut = TMROutput(cmd.ras)
+        self.comb += cmd.rasTMR.eq(rasTMROut.output)
+        self.submodules += rasTMROut
+        
+        ## we
+
+        self.weTMROut = weTMROut = TMROutput(cmd.we)
+        self.comb += cmd.weTMR.eq(weTMROut.output)
+        self.submodules += weTMROut
+        
+        ## is_cmd
+
+        self.is_cmdTMROut = is_cmdTMROut = TMROutput(cmd.is_cmd)
+        self.comb += cmd.is_cmdTMR.eq(is_cmdTMROut.output)
+        self.submodules += is_cmdTMROut
+        
+        ## is_read
+
+        self.is_readTMROut = is_readTMROut = TMROutput(cmd.is_read)
+        self.comb += cmd.is_readTMR.eq(is_readTMROut.output)
+        self.submodules += is_readTMROut
+        
+        ## is_write
+
+        self.is_writeTMROut = is_writeTMROut = TMROutput(cmd.is_write)
+        self.comb += cmd.is_writeTMR.eq(is_writeTMROut.output)
+        self.submodules += is_writeTMROut
+        
+        ## valid
+
+        self.validTMROut = validTMROut = TMROutput(cmd.valid)
+        self.comb += cmd.validTMR.eq(validTMROut.output)
+        self.submodules += validTMROut
+        
+        ## ready
+
+        self.readyTMRIn = readyTMRIn = TMRInput(cmd.readyTMR)
+        self.submodules += readyTMRIn
+        
+        ## first
+
+        self.firstTMROut = firstTMROut = TMROutput(cmd.first)
+        self.comb += cmd.firstTMR.eq(firstTMROut.output)
+        self.submodules += firstTMROut
+        
+        ## last
+
+        self.lastTMROut = lastTMROut = TMROutput(cmd.last)
+        self.comb += cmd.lastTMR.eq(lastTMROut.output)
+        self.submodules += lastTMROut
+
         wants_refresh = Signal()
         wants_zqcs    = Signal()
 
@@ -266,7 +342,7 @@ class Refresher(Module):
         )
         fsm.act("WAIT-BANK-MACHINES",
             cmd.valid.eq(1),
-            If(cmd.ready,
+            If(readyTMRIn.result,
                 sequencer.start.eq(1),
                 NextState("DO-REFRESH")
             )

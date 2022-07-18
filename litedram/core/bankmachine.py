@@ -16,6 +16,9 @@ from litex.soc.interconnect import stream
 from litedram.common import *
 from litedram.core.multiplexer import *
 
+from litedram.core.TMROutput import *
+from litedram.core.TMRInput import *
+
 # AddressSlicer ------------------------------------------------------------------------------------
 
 class _AddressSlicer:
@@ -91,6 +94,8 @@ class BankMachine(Module):
         self.refresh_req = refresh_req = Signal()
         self.refresh_gnt = refresh_gnt = Signal()
 
+        
+
         a  = settings.geom.addressbits
         ba = settings.geom.bankbits + log2_int(nranks)
         self.cmd = cmd = stream.Endpoint(cmd_request_rw_layout(a, ba))
@@ -99,6 +104,52 @@ class BankMachine(Module):
 
         auto_precharge = Signal()
 
+        # TMR Setup
+
+        ## valid
+        self.validTMRIn = TMRInput(req.validTMR)
+        self.comb += req.valid.eq(self.validTMRIn.result)
+        self.submodules += self.validTMRIn
+
+        ## ready
+        self.readyTMROut = TMROutput(req.ready)
+        self.comb += req.readyTMR.eq(self.readyTMROut.output)
+        self.submodules += self.readyTMROut
+
+        ## we
+        self.weTMRIn = TMRInput(req.weTMR)
+        self.comb += req.we.eq(self.weTMRIn.result)
+        self.submodules += self.weTMRIn
+        
+        ## addr
+        self.addrTMRIn = TMRInput(req.addrTMR)
+        self.comb += req.addr.eq(self.addrTMRIn.result)
+        self.submodules += self.addrTMRIn
+
+        ## lock
+        self.lockTMROut = TMROutput(req.lock)
+        self.comb += req.lockTMR.eq(self.lockTMROut.output)
+        self.submodules += self.lockTMROut
+        
+        ## wdata_ready
+        self.wdata_readyTMROut = TMROutput(req.wdata_ready)
+        self.comb += req.wdata_readyTMR.eq(self.wdata_readyTMROut.output)
+        self.submodules += self.wdata_readyTMROut
+        
+        ## rdata_valid
+        self.rdata_validTMROut = TMROutput(req.rdata_valid)
+        self.comb += req.rdata_validTMR.eq(self.rdata_validTMROut.output)
+        self.submodules += self.rdata_validTMROut
+
+        ## TMR req
+        self.TMRreq = Record(cmd_layout(address_width))
+        self.comb += [
+            self.TMRreq.we.eq(self.weTMRIn.result),
+            self.TMRreq.addr.eq(self.addrTMRIn.result),
+            self.TMRreq.valid.eq(self.weTMRIn.result),
+            self.TMRreq.ready.eq(req.ready)
+        ]
+
         # Command buffer ---------------------------------------------------------------------------
         cmd_buffer_layout    = [("we", 1), ("addr", len(req.addr))]
         cmd_buffer_lookahead = stream.SyncFIFO(
@@ -106,8 +157,9 @@ class BankMachine(Module):
             buffered=settings.cmd_buffer_buffered)
         cmd_buffer = stream.Buffer(cmd_buffer_layout) # 1 depth buffer to detect row change
         self.submodules += cmd_buffer_lookahead, cmd_buffer
+        
         self.comb += [
-            req.connect(cmd_buffer_lookahead.sink, keep={"valid", "ready", "we", "addr"}),
+            self.TMRreq.connect(cmd_buffer_lookahead.sink, keep={"valid", "ready", "we", "addr"}),
             cmd_buffer_lookahead.source.connect(cmd_buffer.sink),
             cmd_buffer.source.ready.eq(req.wdata_ready | req.rdata_valid),
             req.lock.eq(cmd_buffer_lookahead.source.valid | cmd_buffer.source.valid),

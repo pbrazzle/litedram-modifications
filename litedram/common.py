@@ -241,14 +241,20 @@ class TimingSettings(Settings):
 
 def cmd_layout(address_width):
     return [
-        ("valid",            1, DIR_M_TO_S),
-        ("ready",            1, DIR_S_TO_M),
-        ("we",               1, DIR_M_TO_S),
-        ("addr", address_width, DIR_M_TO_S),
-        ("lock",             1, DIR_S_TO_M), # only used internally
-
-        ("wdata_ready",      1, DIR_S_TO_M),
-        ("rdata_valid",      1, DIR_S_TO_M)
+        ("valid",               1,   DIR_M_TO_S),
+        ("validTMR",            3,   DIR_M_TO_S),
+        ("ready",               1,   DIR_S_TO_M),
+        ("readyTMR",            3,   DIR_S_TO_M),
+        ("we",                  1,   DIR_M_TO_S),
+        ("weTMR",               3,   DIR_M_TO_S),
+        ("addr",    address_width,   DIR_M_TO_S),
+        ("addrTMR", address_width*3, DIR_M_TO_S),
+        ("lock",                1,   DIR_S_TO_M), # only used internally
+        ("lockTMR",             3,   DIR_S_TO_M),
+        ("wdata_ready",         1,   DIR_S_TO_M),
+        ("wdata_readyTMR",      3,   DIR_S_TO_M),
+        ("rdata_valid",         1,   DIR_S_TO_M),
+        ("rdata_validTMR",      3,   DIR_S_TO_M)
     ]
 
 def data_layout(data_width):
@@ -260,18 +266,26 @@ def data_layout(data_width):
 
 def cmd_request_layout(a, ba):
     return [
-        ("a",     a),
-        ("ba",   ba),
-        ("cas",   1),
-        ("ras",   1),
-        ("we",    1)
+        ("a",      a),
+        ("aTMR",   a*3),
+        ("ba",     ba),
+        ("baTMR",  ba*3),
+        ("cas",    1),
+        ("casTMR", 3),
+        ("ras",    1),
+        ("rasTMR", 3),
+        ("we",     1),
+        ("weTMR",  3)
     ]
 
 def cmd_request_rw_layout(a, ba):
     return cmd_request_layout(a, ba) + [
-        ("is_cmd", 1),
-        ("is_read", 1),
-        ("is_write", 1)
+        ("is_cmd",      1),
+        ("is_cmdTMR",   3),
+        ("is_read",     1),
+        ("is_readTMR",  3),
+        ("is_write",    1),
+        ("is_writeTMR", 3)
     ]
 
 

@@ -20,6 +20,9 @@ from litedram.common import *
 from litedram.core.controller import *
 from litedram.frontend.adapter import *
 
+from litedram.core.TMRInput import *
+from litedram.core.TMROutput import *
+
 # LiteDRAMCrossbar ---------------------------------------------------------------------------------
 
 class LiteDRAMCrossbar(Module):
@@ -149,29 +152,56 @@ class LiteDRAMCrossbar(Module):
                 for other_nb, other_arbiter in enumerate(arbiters):
                     if other_nb != nb:
                         other_bank = getattr(controller, "bank"+str(other_nb))
-                        locked = locked | (other_bank.lock & (other_arbiter.grant == nm))
+                        otherBankLockTMR = TMRInput(other_bank.lockTMR)
+                        self.submodules += otherBankLockTMR
+                        locked = locked | (otherBankLockTMR.result & (other_arbiter.grant == nm))
                 master_locked.append(locked)
 
             # Arbitrate ----------------------------------------------------------------------------
             bank_selected  = [(ba == nb) & ~locked for ba, locked in zip(m_ba, master_locked)]
-            bank_requested = [bs & master.cmd.valid for bs, master in zip(bank_selected, self.masters)]
+            bank_requested = [bs & master.cmd.valid for bs, masterValid in zip(bank_selected, self.masters)]
+
+            # Setup Crossbar <-> Bank Machine TMR
+            
+            bankLockTMR = TMRInput(bank.lockTMR)
+            bankReadyTMR = TMRInput(bank.readyTMR)
+            bankWDataReadyTMR = TMRInput(bank.wdata_readyTMR)
+            bankRDataValidTMR = TMRInput(bank.rdata_validTMR)
+            
+            bankValidTMR = TMROutput(Array(bank_requested)[arbiter.grant])
+            bankAddrTMR = TMROutput(Array(m_rca)[arbiter.grant])
+            bankWeTMR = TMROutput(Array(self.masters)[arbiter.grant].cmd.we)
+            
+            # arbiter request = bank request
             self.comb += [
                 arbiter.request.eq(Cat(*bank_requested)),
-                arbiter.ce.eq(~bank.valid & ~bank.lock)
+                arbiter.ce.eq(~bankValidTMR.control & ~bankLockTMR.result)
             ]
+            
+            self.submodules += bankValidTMR
+            self.submodules += bankLockTMR
 
             # Route requests -----------------------------------------------------------------------
+            
             self.comb += [
-                bank.addr.eq(Array(m_rca)[arbiter.grant]),
-                bank.we.eq(Array(self.masters)[arbiter.grant].cmd.we),
-                bank.valid.eq(Array(bank_requested)[arbiter.grant])
+                bank.addrTMR.eq(bankAddrTMR.output),
+                bank.weTMR.eq(bankWeTMR.output),
+                bank.validTMR.eq(bankValidTMR.output)
             ]
-            master_readys = [master_ready | ((arbiter.grant == nm) & bank_selected[nm] & bank.ready)
+
+            self.submodules += bankAddrTMR
+            self.submodules += bankWeTMR
+            
+            master_readys = [master_ready | ((arbiter.grant == nm) & bank_selected[nm] & bankReadyTMR.result)
                 for nm, master_ready in enumerate(master_readys)]
-            master_wdata_readys = [master_wdata_ready | ((arbiter.grant == nm) & bank.wdata_ready)
+            master_wdata_readys = [master_wdata_ready | ((arbiter.grant == nm) & bankWDataReadyTMR.result)
                 for nm, master_wdata_ready in enumerate(master_wdata_readys)]
-            master_rdata_valids = [master_rdata_valid | ((arbiter.grant == nm) & bank.rdata_valid)
+            master_rdata_valids = [master_rdata_valid | ((arbiter.grant == nm) & bankRDataValidTMR.result)
                 for nm, master_rdata_valid in enumerate(master_rdata_valids)]
+
+            self.submodules += bankReadyTMR
+            self.submodules += bankWDataReadyTMR
+            self.submodules += bankRDataValidTMR
 
         # Delay write/read signals based on their latency
         for nm, master_wdata_ready in enumerate(master_wdata_readys):
