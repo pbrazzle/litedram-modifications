@@ -245,7 +245,17 @@ class Multiplexer(Module, AutoCSR):
             wrcmdphase = (wrphase - 1)%nphases
 
         # Command choosing -------------------------------------------------------------------------
+        
+        # Read Bank cmdTMR
+        requestTMR = [bm.cmdTMR for bm in bank_machines]
+        requestTMRIn = []
+        for cmdTMR in requestTMR:
+            cmdIn = TMRRecordInput(cmdTMR)
+            requestTMRIn.append(cmdIn)
+            self.submodules += cmdIn
+        
         requests = [bm.cmd for bm in bank_machines]
+        #requests = requestTMRIn
         self.submodules.choose_cmd = choose_cmd = _CommandChooser(requests)
         self.submodules.choose_req = choose_req = _CommandChooser(requests)
         if settings.phy.nphases == 1:

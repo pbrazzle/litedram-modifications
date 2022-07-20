@@ -19,6 +19,8 @@ from litedram.core.multiplexer import *
 from litedram.TMROutput import *
 from litedram.TMRInput import *
 
+from litedram.TMRRecordOutput import *
+
 # AddressSlicer ------------------------------------------------------------------------------------
 
 class _AddressSlicer:
@@ -99,6 +101,8 @@ class BankMachine(Module):
         a  = settings.geom.addressbits
         ba = settings.geom.bankbits + log2_int(nranks)
         self.cmd = cmd = stream.Endpoint(cmd_request_rw_layout(a, ba))
+        
+        self.cmdTMR = cmdTMR = TMRRecordOutput(cmd)
 
         # # #
 
