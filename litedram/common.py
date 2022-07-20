@@ -311,22 +311,17 @@ class LiteDRAMInterface(Record):
 def cmd_description(address_width):
     return [
         ("we",               1),  # Write (1) or Read (0).
-        ("weTMR",            3),
         ("addr", address_width),  # Address (in Controller's words).
-        ("addrTMR", address_width*3)
     ]
 
 def wdata_description(data_width):
     return [
         ("data",    data_width), # Write Data.
-        ("dataTMR", data_width*3),
         ("we",   data_width//8), # Write Data byte enable.
-        ("weTMR", data_width//8*3)
     ]
 
 def rdata_description(data_width):
-    return [("data", data_width),
-            ("dataTMR", data_width*3)] # Read Data.
+    return [("data", data_width)] # Read Data.
 
 class LiteDRAMNativePort(Settings):
     def __init__(self, mode, address_width, data_width, clock_domain="sys", id=0):
