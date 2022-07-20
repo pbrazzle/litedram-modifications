@@ -335,15 +335,7 @@ class LiteDRAMNativePort(Settings):
         self.flush = Signal()
         self.lock  = Signal()
 
-        self.cmd   = stream.Endpoint(cmd_description(address_width))
-        
-        self.cmdweTMROut = TMROutput(self.cmd.we)
-        self.comb += self.cmd.weTMR.eq(self.cmdweTMROut.output)
-        self.submodules += self.cmdweTMROut
-        self.cmdaddrTMROut = TMROutput(self.cmd.addr)
-        self.comb += self.cmd.addrTMR.eq(self.cmdaddrTMR.output)
-        self.submodules += self.cmdaddrTMROut
-        
+        self.cmd   = stream.Endpoint(cmd_description(address_width)) 
         self.wdata = stream.Endpoint(wdata_description(data_width))
         self.rdata = stream.Endpoint(rdata_description(data_width))
 
