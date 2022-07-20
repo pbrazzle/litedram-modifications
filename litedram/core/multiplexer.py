@@ -22,8 +22,8 @@ from litex.soc.interconnect.csr import AutoCSR
 from litedram.common import *
 from litedram.core.bandwidth import Bandwidth
 
-from litedram.core.TMROutput import *
-from litedram.core.TMRInput import *
+from litedram.TMRInput import *
+from litedram.TMROutput import *
 
 # _CommandChooser ----------------------------------------------------------------------------------
 

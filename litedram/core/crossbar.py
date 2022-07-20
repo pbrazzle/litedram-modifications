@@ -20,8 +20,8 @@ from litedram.common import *
 from litedram.core.controller import *
 from litedram.frontend.adapter import *
 
-from litedram.core.TMRInput import *
-from litedram.core.TMROutput import *
+from litedram.TMRInput import *
+from litedram.TMROutput import *
 
 # LiteDRAMCrossbar ---------------------------------------------------------------------------------
 

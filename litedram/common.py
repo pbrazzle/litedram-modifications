@@ -15,7 +15,9 @@ from collections import OrderedDict
 from migen import *
 
 from litex.soc.interconnect import stream
-from litedram.core import TMROutput
+
+from litedram.TMRInput import *
+from litedram.TMROutput import *
 
 # Helpers ------------------------------------------------------------------------------------------
 
@@ -336,7 +338,11 @@ class LiteDRAMNativePort(Settings):
         self.cmd   = stream.Endpoint(cmd_description(address_width))
         
         self.cmdweTMROut = TMROutput(self.cmd.we)
+        self.comb += self.cmd.weTMR.eq(self.cmdweTMROut.output)
+        self.submodules += self.cmdweTMROut
         self.cmdaddrTMROut = TMROutput(self.cmd.addr)
+        self.comb += self.cmd.addrTMR.eq(self.cmdaddrTMR.output)
+        self.submodules += self.cmdaddrTMROut
         
         self.wdata = stream.Endpoint(wdata_description(data_width))
         self.rdata = stream.Endpoint(rdata_description(data_width))

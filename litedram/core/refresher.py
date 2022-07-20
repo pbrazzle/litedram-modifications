@@ -14,8 +14,8 @@ from litex.soc.interconnect import stream
 
 from litedram.core.multiplexer import *
 
-from litedram.core.TMROutput import *
-from litedram.core.TMRInput import *
+from litedram.TMRInput import *
+from litedram.TMROutput import *
 
 # RefreshExecuter ----------------------------------------------------------------------------------
 
